@@ -13,11 +13,11 @@ ps_model <- function(data_dev,
 }
 
 # data <- data.frame(y = 1, x1 = 3, x2 = 4, cluster = 1)
-make_ps_formula <- function(data, splines = FALSE) {
-  rhs <- grep("x", colnames(data), ignore.case = TRUE)
+make_ps_formula <- function(data, splines = FALSE, rhs = c("x")) {
+  rhs <- mgrep(rhs, colnames(data), ignore.case = TRUE)
   
   predictors <- colnames(data)[rhs]
-  if (any(splines)) {
+  if (any(splines > 0)) {
     library(splines)
     predictors <- c(paste0("ns(", predictors[splines], ", df = 3)"), predictors[-splines])
   }
@@ -41,17 +41,19 @@ ps_odds <- function(...) {
 }
 
 #### These methods build on the ones above. Currently the linear ones are redundant, they do not change the default setting.
-ps_p_lin <- function(use.mean = FALSE, ...)
-  ps_p(formula = make_ps_formula(data = list(...)$data_dev), ...)
 
-ps_p_lin_spl <- function(use.mean = FALSE, ...)
-  ps_p(formula = make_ps_formula(data = list(...)$data_dev, splines = 1L), ...)
 
 ps_odds_lin <- function(...)
   ps_odds(formula = make_ps_formula(data = list(...)$data_dev), ...)
 
 ps_odds_lin_spl <- function(...)
   ps_odds(formula = make_ps_formula(data = list(...)$data_dev, splines = 1L), ...)
+
+ps_odds_lin_w <- function(...)
+  ps_odds(formula = make_ps_formula(data = list(...)$data_dev, rhs = c("x", "w")), ...)
+
+ps_odds_lin_spl_w <- function(...)
+  ps_odds(formula = make_ps_formula(data = list(...)$data_dev, splines = c(1, 3), rhs = c("x", "w")), ...)
 
 ### Method for ignoring propensity
 ps_ignore <- function(...) {
@@ -72,3 +74,5 @@ predict.ps_odds <- function(object, newdata, ...) {
 predict.ps_ignore <- function(object, newdata, ...)
   rep(1, nrow(newdata))
   
+
+
