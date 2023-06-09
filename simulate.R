@@ -10,6 +10,7 @@
 #' @param I Number of simulation iterations
 #' @param family family for prediction model AND propensity model
 #' @param file File for saving
+#' 
 
 simulate_multiple <- function(pars_dev, 
                               pars_val, 
@@ -18,9 +19,7 @@ simulate_multiple <- function(pars_dev,
                                                 "ps_odds_lin",
                                                 "ps_odds_lin_spl"
                                                 ), 
-                              val_measures = list("slope",
-                                                  "citl",
-                                                  "wAUC"), 
+                              val_measures = list("wAUC"), 
                               save_extra = F, 
                               I = 1, 
                               family = "binomial",
@@ -57,11 +56,12 @@ simulate_multiple <- function(pars_dev,
                          pars_val = pars_val,
                          pars_ref = pars_ref,
                          ps_methods = ps_methods,
-                         val_measures = val_measures, 
+                         val_measures = val_measures,
                          family = family,
                          save_extra = save_extra || i == 1,
                          ...),
                     error = error_handler)
+    
     if (is.list(sim)) {
       res[[i]] <- cbind(sim$ests, 
                         i = i, 
@@ -116,7 +116,7 @@ simulate_once <- function(pars_dev,
   ## Propensity score validation
   ## Loop 1: ps_methods
   # Propensity score = ps
-  ests <- ps_values <- list()
+  ests <- ps_values <- ps_fit_list <- list()
   
   for (psm in seq_along(ps_methods)) {
     ps_method <- match.fun(ps_methods[[psm]])
@@ -128,9 +128,11 @@ simulate_once <- function(pars_dev,
       ps_w[ps_w > (1 - eps)] <- 1 - eps
     }
     
-    if (save_extra) 
+    if (save_extra) {
+      ps_fit_list[[ps_methods[[psm]]]] <- ps_fit
       ps_values[[ps_methods[[psm]]]] <- ps_w
-    
+    }
+
     # Loop 2: val_measures
     val_ests <- list()
     for (vm in seq_along(val_measures)) {
@@ -201,7 +203,7 @@ simulate_once <- function(pars_dev,
     out$data_val <- data_val
     out$data_ref <- data_ref
     out$pm_fit <- pm_fit
-    out$ps_fit <- ps_fit
+    out$ps_fit <- ps_fit_list
     out$val_fit <- val_fit
     out$ref_fit <- ref_fit
     out$ps_values <- ps_values
