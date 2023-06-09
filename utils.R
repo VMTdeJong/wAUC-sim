@@ -10,6 +10,9 @@ as.my.data.frame <- function(l) {
   df
 }
 
+mgrep <- function(patterns, x, ignore.case = TRUE) 
+  unlist(mapply(grep, patterns, MoreArgs = list(x = x, ignore.case = ignore.case)))
+
 compare_avg_to_ref <- function(x) {
   
   out <- list()
@@ -174,22 +177,51 @@ plot_results <- function(x,
   df$Method[df$Method == "dev"] <- "Development data"
   df$Method[df$Method == "ps_ignore"] <- "Unweighted / naive"
   df$Method[df$Method == "ps_odds_lin"] <- "Propensity"
+  df$Method[df$Method == "ps_odds_lin_w"] <- "Propensity, with extra covariate"
   df$Method[df$Method == "ps_odds_lin_spl"] <- "Propensity, splines"
+  df$Method[df$Method == "ps_odds_lin_spl_w"] <- "Propensity, splines, with extra covariate"
+
+  possible_levels <- c(
+    "Propensity",
+    "Propensity, splines",
+    "Propensity, with extra covariate",
+    "Propensity, splines, with extra covariate",
+    "Unweighted / naive",
+    "Development data")
+
+  df$Method <- factor(df$Method, levels = possible_levels)
+  legend_rows <- ceiling(length(unique(df$Method))/3)
   
+  # See for fixing color scheme: 
+    # https://stackoverflow.com/questions/19068432/ggplot2-how-to-use-same-colors-in-different-plots-for-same-factor
+  # I changed it to color blind friendly colors:
+  # https://davidmathlogic.com/colorblind/#%23648FFF-%23785EF0-%23DC267F-%23FE6100-%23FFB000
+
+  selection <- possible_levels %in% unique(df$Method)
+  cols <- c("#648FFF", "#DC267F", "#FE6100", "#785EF0", "#FFB000", "gray31")[selection]
+  names(cols) <- possible_levels[selection]
+  
+  # And keep shapes constant across plots
+  shapes <- 1:6
+  names(shapes) <- possible_levels
+  shapes <- shapes[selection]
+
   dodge <- 1/2
   
-  labels <- c("500" = "N development = 500", "2000" = "N development = 2000")
-
+  labels <- c("500" = "n development = 500", "2000" = "n development = 2000")
+  
   ggplot(data = df,
-         aes_string(x = "Scenario", y = stat, group = "Method", ...)) +
+         aes_string(x = "Scenario", y = stat, group = "Method",  ...)) +
     geom_point(aes(color = Method, shape = Method),
                position = position_dodge(dodge)) +
     geom_errorbar(width = 1,
                   aes(ymin = lower, ymax = upper, color = Method),
                   position = position_dodge(dodge)) +
     theme(legend.position = "bottom") +
-    scale_colour_hue(direction = -1) + 
-    facet_grid( . ~ n_dev, labeller=labeller(n_dev = labels))
+    scale_color_manual(values = cols) +
+    scale_shape_manual(values = shapes) +
+    facet_grid( . ~ n_dev, labeller=labeller(n_dev = labels)) +
+    guides(colour = guide_legend(nrow = 2))
 }
 
 #' @param x variable to draw bootstrap samples from
